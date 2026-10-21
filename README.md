@@ -138,6 +138,7 @@ You're a developer — we know how hard completing a project can be. So we offer
 - [**Internshala Scraper**](https://github.com/omkarcloud/internshala-scraper) — Internshala internships & jobs: stipends, CTC, skills, applicants & employer profiles
 - [**Hirist Scraper**](https://github.com/omkarcloud/hirist-scraper) — Hirist IT jobs, company ratings, recruiters & skills with live job counts
 - [**Jobstreet Scraper**](https://github.com/omkarcloud/jobstreet-scraper) — JobStreet & JobsDB jobs, salaries, company reviews & career guides
+- [**Cutshort Scraper**](https://github.com/omkarcloud/cutshort-scraper) — Cutshort India tech jobs, INR salary bands, skills & company profiles
 - [**G2 Scraper**](https://www.omkar.cloud/tools/g2-scraper) — G2 product details, ratings & AI-found contacts
 - [**Website Email Contact Scraper**](https://www.omkar.cloud/tools/website-email-contact-scraper) — emails, phones & socials from any website
 - [**AliExpress Scraper**](https://www.omkar.cloud/tools/aliexpress-scraper-api) — live product details, SKU variants, stock & shipping
