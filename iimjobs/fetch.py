@@ -42,11 +42,13 @@ iimjobs Learning's course service at lng-api.iimjobs.com. Surfaces:
 Logged out, /detail masks applyCount / hits / recruiterName as '*****'
 (the rich feeds still carry them). /jobfeed and /insights need a login.
 
-Egress: direct by default (config.IIMJOBS_PROXY_COUNTRY None); no rate
-limit or challenge was seen. A 429 / 403 / 5xx is retried on a fresh
-sticky residential exit (config.iimjobs_proxy(fallback=True)). The
-patchright click-through (indeed/fetch.py _browser_page) is the
-escalation if a challenge ever appears — not built while plain HTTP works.
+Egress: config.iimjobs_proxy() — in the hosted service every call rides a
+sticky residential exit (iimjobs never sees the server's own IP), one exit
+per thread reused until a call fails; a 429 / 403 / 5xx retries on a fresh
+exit. No rate limit or challenge was seen. The standalone package's config
+returns its IIMJOBS_PROXY env var or None (direct, your own IP). The
+patchright click-through (indeed/fetch.py _browser_page) is the escalation
+if a challenge ever appears — not built while plain HTTP works.
 
 The session pool, challenge markers, memo and parallel runner work as in
 hirist/fetch.py (same service, same behaviour); the error types and retry
@@ -162,6 +164,19 @@ def _error_message(body, text):
     return (text or "")[:200]
 
 
+def _exit(fresh=False):
+    """(session key, proxy) for this thread: one sticky exit reused call
+    after call (its curl session keeps the connection warm), a fresh one
+    after a failure. config.iimjobs_proxy() None = direct (the standalone
+    package run on your own machine)."""
+    held = getattr(_local, "exit", None)
+    if held is None or fresh:
+        proxy = config.iimjobs_proxy(fallback=fresh)
+        held = (f"iimjobs:{proxy or 'direct'}", proxy)
+        _local.exit = held
+    return held
+
+
 def _attempts(label, send):
     """Run send(session) under the retry policy: IimjobsUpstreamError (incl.
     Blocked) retries on a fresh exit up to config.IIMJOBS_MAX_ATTEMPTS
@@ -169,8 +184,7 @@ def _attempts(label, send):
     attempts = max(1, int(config.IIMJOBS_MAX_ATTEMPTS))
     last = None
     for attempt in range(1, attempts + 1):
-        proxy = config.iimjobs_proxy(fallback=attempt > 1)
-        key = f"iimjobs:{attempt if proxy else 0}:{proxy or 'direct'}"
+        key, proxy = _exit(fresh=attempt > 1)
         sess = _session(key, proxy)
         try:
             return send(sess)
@@ -181,6 +195,7 @@ def _attempts(label, send):
         except Exception as e:
             last = IimjobsUpstreamError(f"request failed on {label}: {type(e).__name__}: {e}")
         _drop_session(key)
+        _local.exit = None          # the next attempt (and call) takes a fresh exit
         print(f"iimjobs: attempt {attempt}/{attempts} on {label} failed: {last}")
         if attempt < attempts:
             time.sleep(1.0 * attempt)
